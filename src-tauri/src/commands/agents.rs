@@ -1789,22 +1789,23 @@ pub async fn get_claude_binary_path(db: State<'_, AgentDb>) -> Result<Option<Str
 #[tauri::command]
 pub async fn set_claude_binary_path(db: State<'_, AgentDb>, path: String) -> Result<(), String> {
     let conn = db.0.lock().map_err(|e| e.to_string())?;
-
-    // Validate that the path exists and is executable
-    let path_buf = std::path::PathBuf::from(&path);
-    if !path_buf.exists() {
-        return Err(format!("File does not exist: {}", path));
-    }
-
-    // Check if it's executable (on Unix systems)
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::PermissionsExt;
-        let metadata = std::fs::metadata(&path_buf)
-            .map_err(|e| format!("Failed to read file metadata: {}", e))?;
-        let permissions = metadata.permissions();
-        if permissions.mode() & 0o111 == 0 {
-            return Err(format!("File is not executable: {}", path));
+    if path != "claude" {
+        // Validate that the path exists and is executable
+        let path_buf = std::path::PathBuf::from(&path);
+        if !path_buf.exists() {
+            return Err(format!("File does not exist: {}", path));
+        }
+    
+        // Check if it's executable (on Unix systems)
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            let metadata = std::fs::metadata(&path_buf)
+                .map_err(|e| format!("Failed to read file metadata: {}", e))?;
+            let permissions = metadata.permissions();
+            if permissions.mode() & 0o111 == 0 {
+                return Err(format!("File is not executable: {}", path));
+            }
         }
     }
 
